@@ -1324,7 +1324,7 @@ def update_node_list():
             db_cursor = db_connection.cursor()
 
             # Fetch all nodes from the database
-            nodes = db_cursor.execute(f'SELECT user_id, long_name, short_name FROM {table_name}').fetchall()
+            nodes = db_cursor.execute(f'SELECT user_id, long_name, short_name FROM {table_name} ORDER BY long_name COLLATE NOCASE ASC').fetchall()
 
             # Clear the display
             nodeinfo_window.config(state=tk.NORMAL)
