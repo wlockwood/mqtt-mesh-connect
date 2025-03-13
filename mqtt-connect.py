@@ -954,10 +954,12 @@ def maybe_store_nodeinfo_in_db(info):
                 db_connection.commit()
 
                 # Fetch the new record
-                new_record = db_cursor.execute(f'SELECT * FROM {table_name} WHERE user_id=?', (info.id,)).fetchone()
+                new_record = db_cursor.execute(f'SELECT user_id, short_name, long_name FROM {table_name} WHERE user_id=?', (info.id,)).fetchone()
 
                 # Display the new record in the nodeinfo_window widget
-                message = f"{new_record[0]}, {new_record[1]}, {new_record[2]}"
+                # Padding records to 5 since emoji are twice as wide
+                short_pad = 4 if len(new_record[1]) != 1 else 3
+                message = f"{new_record[0]} {new_record[1]:4} | {new_record[2]}"
                 update_gui(message, text_widget=nodeinfo_window)
             else:
                 # Check if long_name or short_name is different, update if necessary
@@ -975,6 +977,7 @@ def maybe_store_nodeinfo_in_db(info):
                     updated_record = db_cursor.execute(f'SELECT * FROM {table_name} WHERE user_id=?', (info.id,)).fetchone()
 
                     # Display the updated record in the nodeinfo_window widget
+                    # This appends the record to the end, which breaks sorting
                     message = f"{updated_record[0]}, {updated_record[1]}, {updated_record[2]}"
                     update_gui(message, text_widget=nodeinfo_window)
 
@@ -1324,7 +1327,7 @@ def update_node_list():
             db_cursor = db_connection.cursor()
 
             # Fetch all nodes from the database
-            nodes = db_cursor.execute(f'SELECT user_id, long_name, short_name FROM {table_name} ORDER BY long_name COLLATE NOCASE ASC').fetchall()
+            nodes = db_cursor.execute(f'SELECT user_id, short_name, long_name FROM {table_name} ORDER BY short_name COLLATE NOCASE ASC, long_name COLLATE NOCASE ASC').fetchall()
 
             # Clear the display
             nodeinfo_window.config(state=tk.NORMAL)
@@ -1332,7 +1335,8 @@ def update_node_list():
 
             # Display each node in the nodeinfo_window widget
             for node in nodes:
-                message = f"{node[0]}, {node[1]}, {node[2]}\n"
+                short_pad = 4 if len(node[1]) != 1 else 3
+                message = f"{node[0]} {node[1]:{short_pad}} | {node[2]}\n"
                 nodeinfo_window.insert(tk.END, message)
 
             nodeinfo_window.config(state=tk.DISABLED)
