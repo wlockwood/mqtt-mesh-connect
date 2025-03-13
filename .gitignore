@@ -2,3 +2,4 @@
 .DS_Store
 presets.json
 .venv
+__pycache__
