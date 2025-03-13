@@ -37,6 +37,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 import paho.mqtt.client as mqtt
 
+from models import Node
 
 #################################
 ### Debug Options
@@ -955,12 +956,11 @@ def maybe_store_nodeinfo_in_db(info):
 
                 # Fetch the new record
                 new_record = db_cursor.execute(f'SELECT user_id, short_name, long_name FROM {table_name} WHERE user_id=?', (info.id,)).fetchone()
+                new_node = Node(*new_record)
 
                 # Display the new record in the nodeinfo_window widget
-                # Padding records to 5 since emoji are twice as wide
-                short_pad = 4 if len(new_record[1]) != 1 else 3
-                message = f"{new_record[0]} {new_record[1]:4} | {new_record[2]}"
-                update_gui(message, text_widget=nodeinfo_window)
+                # This inserts add the end, which breaks the sorting we start with. 
+                update_gui(new_node.node_list_disp, text_widget=nodeinfo_window)
             else:
                 # Check if long_name or short_name is different, update if necessary
                 if existing_record[1] != info.long_name or existing_record[2] != info.short_name:
@@ -1334,10 +1334,9 @@ def update_node_list():
             nodeinfo_window.delete('1.0', tk.END)
 
             # Display each node in the nodeinfo_window widget
-            for node in nodes:
-                short_pad = 4 if len(node[1]) != 1 else 3
-                message = f"{node[0]} {node[1]:{short_pad}} | {node[2]}\n"
-                nodeinfo_window.insert(tk.END, message)
+            for node_record in nodes:
+                node = Node(*node_record)
+                nodeinfo_window.insert(tk.END, node.node_list_disp + "\n")
 
             nodeinfo_window.config(state=tk.DISABLED)
 
