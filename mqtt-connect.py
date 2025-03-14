@@ -309,7 +309,7 @@ def load_preset():
         key_entry.insert(0, selected_preset.key)
         node_number_entry.delete(0, tk.END)
         node_number_entry.insert(0, selected_preset.node_number)
-        move_text_down()
+        node_number_to_mac()
         long_name_entry.delete(0, tk.END)
         long_name_entry.insert(0, selected_preset.long_name)
         short_name_entry.delete(0, tk.END)
@@ -709,7 +709,7 @@ def send_node_info(destination_id, want_response):
         message =  format_time(current_time()) + " >>> Connect to a broker before sending nodeinfo"
         update_gui(message, tag="info")
     else:
-        if not move_text_up(): # copy ID to Number and test for 8 bit hex
+        if not mac_to_node_number(): # copy ID to Number and test for 8 bit hex
             return
         
         if destination_id == BROADCAST_NUM:
@@ -1170,7 +1170,7 @@ def connect_mqtt():
                 debug_print("key is default, expanding to AES128")
                 key = "1PG7OiApB1nwvP+rz05pAQ=="
 
-            if not move_text_up(): # copy ID to Number and test for 8 bit hex
+            if not mac_to_node_number(): # copy ID to Number and test for 8 bit hex
                 return
             
             node_number = int(node_number_entry.get())  # Convert the input to an integer
@@ -1316,7 +1316,7 @@ def on_nodeinfo_leave(event):							# pylint: disable=unused-argument
 
 
 def on_nodeinfo_click(event):							# pylint: disable=unused-argument
-    """?"""
+    """Event handler for clicking on a node in the node info list."""
 
     debug_print("on_nodeinfo_click")
 
@@ -1332,8 +1332,8 @@ def on_nodeinfo_click(event):							# pylint: disable=unused-argument
     entry_dm.insert(0, to_id)
 
 
-def move_text_up():
-    """?"""
+def mac_to_node_number():
+    """Converts the hex value in the node ID field to an 10-digit integer node ID in the node number field."""
 
     text = node_id_entry.get()
     if not is_valid_mac(text):
@@ -1347,8 +1347,8 @@ def move_text_up():
         return True
 
 
-def move_text_down():
-    """?"""
+def node_number_to_mac():
+    """Converts the value in the node number field to a hex MAC and copies the result to the node ID field."""
     text = node_number_entry.get()
     if not text.isdecimal():
         print("Not a number or wrong length")
@@ -1396,8 +1396,6 @@ def on_exit():
         print("client disconnected")
     root.destroy()
     client.loop_stop()
-
-
 
 
 ### tcl upstream bug warning
@@ -1527,7 +1525,7 @@ id_frame.columnconfigure(2, weight=1)
 node_number_label = tk.Label(id_frame, text="Node Number:")
 node_number_label.grid(row=0, column=0, padx=5, pady=1, sticky=tk.W)
 
-up_button = tk.Button(id_frame, text="↑", command=move_text_up)
+up_button = tk.Button(id_frame, text="↑", command=mac_to_node_number)
 up_button.grid(row=0, column=1)
 
 node_number_entry = tk.Entry(id_frame)
@@ -1538,12 +1536,12 @@ node_number_entry.insert(0, node_number)
 node_id_label = tk.Label(id_frame, text="Node ID:")
 node_id_label.grid(row=1, column=0, padx=5, pady=1, sticky=tk.W)
 
-down_button = tk.Button(id_frame, text="↓", command=move_text_down)
+down_button = tk.Button(id_frame, text="↓", command=node_number_to_mac)
 down_button.grid(row=1, column=1)
 
 node_id_entry = tk.Entry(id_frame)
 node_id_entry.grid(row=1, column=2, padx=5, pady=1, sticky=tk.EW)
-move_text_down()
+node_number_to_mac()
 
 
 separator_label = tk.Label(message_log_frame, text="____________")
