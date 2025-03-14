@@ -98,23 +98,24 @@ def debug_print(to_print: str):
     """Prints if the DEBUG constant is set."""
     if DEBUG: print(to_print)
 
-def is_valid_hex(test_value: str, minchars: Optional[int], maxchars: int) -> bool:
-    """Check if the provided string is valid hex.  Note that minchars and maxchars count INDIVIDUAL HEX LETTERS, inclusive.  Setting either to None means you don't care about that one."""
-
+def is_valid_mac(test_value: str) -> bool:
     if test_value.startswith('!'):
         test_value = test_value[1:]		#Ignore a leading exclamation point
-    valid_hex_return: bool = all(c in string.hexdigits for c in test_value)
+    if len(test_value) != 8: return False
+    if not is_valid_hex(test_value): return False
+    if test_value in reserved_ids: return False
+    return True
 
-    decimal_value = int(test_value, 16)
-    if decimal_value in reserved_ids:
+def is_valid_hex(test_value: str, minchars: int = 0, maxchars: int = sys.maxsize) -> bool:
+    """Check if the provided string is valid hex.  Note that minchars and maxchars count INDIVIDUAL HEX LETTERS, inclusive.  Setting either to None means you don't care about that one."""
+    spaceless = test_value.replace(" ", "")
+    if not minchars <= len(spaceless) <= maxchars:
         return False
-    
-    if minchars is not None:
-        valid_hex_return = valid_hex_return and (minchars <= len(test_value))
-    if maxchars is not None:
-        valid_hex_return = valid_hex_return and (len(test_value) <= maxchars)
-
-    return valid_hex_return
+    try:
+        bytes.fromhex(test_value)
+    except Exception:
+        return False
+    return True
 
 
 def set_topic():
@@ -1335,9 +1336,9 @@ def move_text_up():
     """?"""
 
     text = node_id_entry.get()
-    if not is_valid_hex(text, 8, 8):
-        print ("Not valid Hex")
-        messagebox.showwarning("Warning", "Not a valid Hex ID")
+    if not is_valid_mac(text):
+        print ("Not valid MAC")
+        messagebox.showwarning("Warning", "Not a valid hex MAC ID")
         return False
     else:
         text = int(text.replace("!", ""), 16)
@@ -1348,13 +1349,16 @@ def move_text_up():
 
 def move_text_down():
     """?"""
-
     text = node_number_entry.get()
+    if not text.isdecimal():
+        print("Not a number or wrong length")
+        messagebox.showwarning("Warning", "Node number must be 10 digits (0-9)")
+        return False
     text = '!{}'.format(hex(int(text))[2:])
 
-    if not is_valid_hex(text, 8, 8):
-        print ("Not valid Hex")
-        messagebox.showwarning("Warning", "Not a valid Hex ID")
+    if not is_valid_mac(text):
+        print ("Not valid MAC")
+        messagebox.showwarning("Warning", "Not a valid 8-digit hex MAC ID")
         return False
     else:
         node_id_entry.delete(0, "end")
@@ -1407,7 +1411,7 @@ if sys.platform.startswith('darwin'):
 # Generate 4 random hexadecimal characters to create a unique node name
 random_hex_chars = ''.join(random.choices('0123456789abcdef', k=4))
 node_name = '!abcd' + random_hex_chars
-if not is_valid_hex(node_name, 8, 8):
+if not is_valid_mac(node_name):
     print('Invalid generated node name: ' + str(node_name))
     sys.exit(1)
 
