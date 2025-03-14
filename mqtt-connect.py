@@ -939,47 +939,35 @@ def maybe_store_nodeinfo_in_db(info):
 
     try:
         with sqlite3.connect(db_file_path) as db_connection:
-            db_cursor = db_connection.cursor()
-
             # Check if a record with the same user_id already exists
-            existing_record = db_cursor.execute(f'SELECT * FROM {table_name} WHERE user_id=?', (info.id,)).fetchone()
+            existing_record = db_connection.execute(f'SELECT * FROM {table_name} WHERE user_id=?', (info.id,)).fetchone()
 
             if existing_record is None:
                 if debug:
                     print("no record found, adding node to db")
                 # No existing record, insert the new record
-                db_cursor.execute(f'''
+                db_connection.execute(f'''
                     INSERT INTO {table_name} (user_id, long_name, short_name)
                     VALUES (?, ?, ?)
                 ''', (info.id, info.long_name, info.short_name))
-                db_connection.commit()
-
-                # Fetch the new record
-                new_record = db_cursor.execute(f'SELECT user_id, short_name, long_name FROM {table_name} WHERE user_id=?', (info.id,)).fetchone()
-                new_node = Node(*new_record)
-
-                # Display the new record in the nodeinfo_window widget
-                # This inserts add the end, which breaks the sorting we start with. 
-                update_gui(new_node.node_list_disp, text_widget=nodeinfo_window)
             else:
-                # Check if long_name or short_name is different, update if necessary
                 if existing_record[1] != info.long_name or existing_record[2] != info.short_name:
                     if debug:
                         print("updating existing record in db")
-                    db_cursor.execute(f'''
+                    db_connection.execute(f'''
                         UPDATE {table_name}
                         SET long_name=?, short_name=?
                         WHERE user_id=?
                     ''', (info.long_name, info.short_name, info.id))
-                    db_connection.commit()
+            db_connection.commit()
+            
+            # Fetch the new record
+            new_record = db_connection.execute(f'SELECT user_id, short_name, long_name FROM {table_name} WHERE user_id=?', (info.id,)).fetchone()
+            updated_node = Node(*new_record)
 
-                    # Fetch the updated record
-                    updated_record = db_cursor.execute(f'SELECT * FROM {table_name} WHERE user_id=?', (info.id,)).fetchone()
-
-                    # Display the updated record in the nodeinfo_window widget
-                    # This appends the record to the end, which breaks sorting
-                    message = f"{updated_record[0]}, {updated_record[1]}, {updated_record[2]}"
-                    update_gui(message, text_widget=nodeinfo_window)
+            # Display the new record in the nodeinfo_window widget
+            # This inserts add the end, which breaks the sorting we start with. 
+            update_gui(updated_node.node_list_disp, text_widget=nodeinfo_window)
 
     except sqlite3.Error as e:
         print(f"SQLite error in maybe_store_nodeinfo_in_db: {e}")
